@@ -1,12 +1,15 @@
 [
-    "blog.wu-boy.com.json",
-    "choosealicense.com.json",
-    "cornell.edu.json",
-    "deeplearning.ai.json",
-    "go.dev.json",
-    "njit.edu.json",
-    "www.apple.com.json",
-    "www.autozone.com.json",
-    "www.google.com.json",
-    "www.roblox.com.json"
-  ]
+  "ca.gov.json",
+  "choosealicense.com.json",
+  "cornell.edu.json",
+  "deeplearning.ai.json",
+  "go.dev.json",
+  "harvard.edu.json",
+  "njit.edu.json",
+  "nyc.gov.json",
+  "nyu.edu.json",
+  "www.apple.com.json",
+  "www.autozone.com.json",
+  "www.google.com.json",
+  "www.roblox.com.json"
+]

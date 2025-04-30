@@ -201,7 +201,7 @@
     </div>
     <!-- New Dropdown Container -->
     <div class="mb-3">
-        <label for="json-file-select" class="mr-2 text-sm font-medium text-gray-700">Select Site Data:</label>
+        <label for="json-file-select" id="json-select-label" class="mr-2 text-sm font-medium text-gray-700">Select Site Data:</label> <!-- Added id="json-select-label" -->
         <select id="json-file-select" class="p-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <option value="">Loading files...</option>
         </select>
@@ -338,9 +338,25 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-             // Populate dropdown, which will trigger the initial fetchData
-             populateJsonFilesDropdown();
-             // DO NOT call fetchData here directly anymore
+             // Check for 'site' URL parameter
+             const urlParams = new URLSearchParams(window.location.search);
+             const siteParam = urlParams.get('site');
+
+             if (siteParam) {
+                 // Site parameter exists: hide dropdown and load directly
+                 const selectLabel = document.getElementById('json-select-label');
+                 const selectElement = document.getElementById('json-file-select');
+                 if (selectLabel) selectLabel.style.display = 'none';
+                 if (selectElement) selectElement.style.display = 'none';
+
+                 const filePath = `json/${siteParam}.json`;
+                 DEFAULT_JSON_PATH = filePath; // Update default path for consistency if needed
+                 fetchData(filePath); // Fetch data directly
+             } else {
+                 // No site parameter: populate dropdown and load default/selected
+                 populateJsonFilesDropdown();
+             }
+             // DO NOT call fetchData here directly anymore unless handled by the logic above
         });
 
         // --- Tree Building Logic ---
@@ -449,7 +465,17 @@
             if (!container) return;
             container.innerHTML = ''; // Clear previous content
 
-            const sortedHosts = Object.keys(treeData).sort();
+            // Sort hosts by urlCount (descending), then alphabetically as a tie-breaker
+            const sortedHosts = Object.keys(treeData).sort((hostA, hostB) => {
+                const countA = treeData[hostA].urlCount;
+                const countB = treeData[hostB].urlCount;
+                if (countB !== countA) {
+                    return countB - countA; // Sort by count descending
+                }
+                // If counts are equal, sort alphabetically
+                return hostA.localeCompare(hostB);
+            });
+
             if (sortedHosts.length === 0) {
                  container.innerHTML = '<p class="text-gray-500">No valid URL data to display.</p>';
                  return;
@@ -474,7 +500,7 @@
                 // Apply 'collapsed' class based on data state
                 hostChildrenDiv.className = `host-children-container ${hostData.isCollapsed ? 'collapsed' : ''}`;
 
-                // Render children recursively
+                // Render children recursively (children sorting remains alphabetical inside renderNodeChildren)
                 const childrenContent = renderNodeChildren(hostData, hostChildrenDiv); // Pass hostData
                 const hasChildren = childrenContent && childrenContent.children.length > 0;
 
