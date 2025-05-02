@@ -1,15 +1,23 @@
 [
   "ca.gov.json",
   "choosealicense.com.json",
+  "chromedevtools.github.io.json",
   "cornell.edu.json",
+  "costco.com.json",
   "deeplearning.ai.json",
+  "docker.com.json",
   "go.dev.json",
   "harvard.edu.json",
+  "mi.com.json",
+  "njeda.gov.json",
   "njit.edu.json",
   "nyc.gov.json",
   "nyu.edu.json",
+  "partsauthority.com.json",
+  "puxiang.com.json",
+  "python.org.json",
   "www.apple.com.json",
   "www.autozone.com.json",
   "www.google.com.json",
-  "www.roblox.com.json"
+  "zhipin.com.json"
 ]
