@@ -2,10 +2,10 @@
   "ca.gov.json",
   "choosealicense.com.json",
   "chromedevtools.github.io.json",
+  "code.visualstudio.com.json",
   "cornell.edu.json",
   "costco.com.json",
   "deeplearning.ai.json",
-  "docker.com.json",
   "go.dev.json",
   "harvard.edu.json",
   "mi.com.json",
@@ -18,6 +18,7 @@
   "python.org.json",
   "www.apple.com.json",
   "www.autozone.com.json",
+  "www.docker.com.json",
   "www.google.com.json",
   "zhipin.com.json"
 ]
