@@ -1,767 +1,673 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网站资源浏览器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Resource Browser</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',      // Slate 900
+                            panel: '#1e293b',   // Slate 800
+                            border: '#334155',  // Slate 700
+                            hover: '#334155',   // Slate 700
+                            text: '#e2e8f0',    // Slate 200
+                            muted: '#94a3b8',   // Slate 400
+                            blue: '#3b82f6',
+                        }
+                    },
+                    fontSize: {
+                        'xxs': '0.65rem',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* Custom styles for the tree view - More Compact version */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9fafb;
-            font-size: 0.85rem; /* Reduced base font size */
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .controls {
-            margin-bottom: 0.75rem; /* Reduced margin */
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #0f172a;
         }
-        .control-button {
-            background-color: #e5e7eb; /* Gray-200 */
-            color: #374151; /* Gray-700 */
-            padding: 0.2rem 0.6rem; /* Reduced padding */
-            border: none;
-            border-radius: 0.375rem; /* rounded-md */
-            font-size: 0.8rem; /* Reduced font size */
-            font-weight: 500;
-            cursor: pointer;
-            margin-right: 0.4rem; /* Reduced margin */
-            transition: background-color 0.2s;
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 3px;
         }
-        .control-button:hover {
-            background-color: #d1d5db; /* Gray-300 */
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: #475569;
         }
 
-        .tree-node {
-            margin-left: 1rem; /* Reduced margin */
-            padding-left: 0.3rem; /* Reduced padding */
-            border-left: 1px solid #e5e7eb;
-            margin-top: 0.05rem; /* Reduced margin */
-            margin-bottom: 0.05rem; /* Reduced margin */
+        /* Smooth Toggle Icon Rotation */
+        .toggle-icon {
+            transition: transform 0.15s ease;
         }
-        .node-header {
-            display: flex;
-            align-items: center;
-            padding: 0.05rem 0; /* Reduced padding */
-            cursor: default;
-            position: relative; /* For absolute positioning of link */
+        .toggle-icon.expanded {
+            transform: rotate(90deg);
         }
-        .node-toggle {
-            cursor: pointer;
-            margin-right: 0.2rem; /* Reduced margin */
+
+        .sidebar-transition {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .noselect {
             user-select: none;
-            width: 0.7rem; /* Reduced width */
-            text-align: center;
-            color: #6b7280;
-            flex-shrink: 0;
-            font-size: 0.6rem; /* Reduced font size */
         }
-        .node-toggle.hidden {
-             visibility: hidden;
+        
+        /* Material Icons adjustment */
+        .material-icons {
+            font-size: 16px;
+            line-height: 1;
         }
-        .node-name {
-            font-weight: 500;
-            color: #1f2937;
-            word-break: break-all;
-            margin-right: 0.2rem; /* Reduced margin */
-            font-size: 0.85em; /* Slightly smaller relative size */
-        }
-        /* Style for leaf node names */
-        .leaf-node-name {
-            color: #1e3a8a; /* Dark Blue (Blue-800) */
-            font-size: 0.85em; /* Match node-name */
-        }
-        .node-count {
-            color: #6b7280;
-            font-size: 0.75em; /* Reduced font size */
-            margin-left: 0.15rem; /* Reduced margin */
-            white-space: nowrap;
-        }
-        .leaf-endpoint-marker {
-             color: #6b7280;
-             font-weight: normal;
-             margin-right: 0.15rem; /* Reduced margin */
-        }
-        /* Status Indicator Styles */
-        .status-indicator {
-            font-size: 0.75em; /* Reduced font size */
-            font-weight: 600;
-            margin-left: 0.3rem; /* Reduced margin */
-            padding: 0.05rem 0.25rem; /* Reduced padding */
-            border-radius: 0.25rem;
-            white-space: nowrap;
-        }
-        .status-ok {
-            color: #059669; /* Emerald-600 */
-        }
-        .status-error {
-            color: #dc2626; /* Red-600 */
-            font-style: italic;
-        }
-        /* Go To URL Link */
-        .go-to-link {
-            color: #3b82f6; /* Blue-500 */
-            text-decoration: none;
-            margin-left: 0.3rem; /* Reduced margin */
-            font-size: 1em; /* Reduced size */
-            font-weight: bold;
-            transition: color 0.2s;
-        }
-        .go-to-link:hover {
-            color: #1d4ed8; /* Blue-700 */
-        }
-
-        .node-children {
-             /* Starts expanded */
-        }
-        .node-children.collapsed {
-            display: none;
-        }
-        /* Toggle icons */
-        .node-toggle::before {
-            content: '▼'; /* Expanded */
-            display: inline-block;
-            transition: transform 0.1s ease-in-out;
-            vertical-align: middle;
-        }
-        .tree-node.collapsed > .node-header > .node-toggle::before {
-            content: '▶'; /* Collapsed */
-        }
-        .host-root {
-            background-color: white;
-            padding: 0.5rem 0.75rem; /* Reduced padding */
-            border-radius: 0.375rem;
-            margin-bottom: 0.5rem; /* Reduced margin */
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        /* Container for children within host root, for collapsing */
-        .host-children-container {
-             /* Starts expanded */
-        }
-        .host-children-container.collapsed {
-             display: none;
-        }
-        .host-header {
-            font-size: 0.9rem; /* Reduced font size */
-            font-weight: 600;
-            margin-bottom: 0.2rem; /* Reduced margin */
-            color: #111827;
-            /* Make host header behave like node header for alignment */
-            display: flex;
-            align-items: center;
-            cursor: pointer; /* Ensure cursor indicates clickable */
-        }
-        /* Add toggle indicator for host */
-        .host-header::before {
-            content: '▼'; /* Expanded */
-            display: inline-block;
-            transition: transform 0.1s ease-in-out;
-            vertical-align: middle;
-            margin-right: 0.3rem; /* Reduced margin */
-            font-size: 0.6rem; /* Match node toggle size */
-            color: #6b7280; /* Match node toggle color */
-            width: 0.7rem; /* Match node toggle width */
-            text-align: center;
-            flex-shrink: 0;
-            user-select: none; /* Prevent text selection */
-        }
-        .host-root.collapsed > .host-header::before {
-            content: '▶'; /* Collapsed */
-        }
-        /* Hide toggle if no children */
-        .host-header.no-children::before {
-            visibility: hidden;
-        }
-         .host-count {
-            color: #6b7280;
-            font-size: 0.8em; /* Reduced font size */
-            margin-left: 0.2rem; /* Reduced margin */
-            font-weight: 500;
-        }
-        .root-endpoint {
-             margin-left: 1rem; /* Reduced margin */
-             padding-left: 0.3rem; /* Reduced padding */
-             border-left: 1px solid #e5e7eb;
-             color: #6b7280;
-             font-style: italic;
-             padding-top: 0.05rem; /* Reduced padding */
-             display: flex;
-             align-items: center;
+        /* Specific size for control buttons to match compact grid */
+        .control-icon {
+            font-size: 18px; 
         }
     </style>
 </head>
-<body class="p-3 md:p-4"> <!-- Reduced padding -->
-    <h1 class="text-lg font-semibold mb-3 text-gray-800">网站资源浏览器</h1> <!-- Reduced size/margin -->
-    <div class="controls mb-2"> <!-- Added margin-bottom -->
-        <button id="expand-all-btn" class="control-button">Expand All</button>
-        <button id="collapse-all-btn" class="control-button">Collapse All</button>
-        <button id="toggle-view-btn" class="control-button">Show Titles</button>
-    </div>
-    <!-- New Dropdown Container -->
-    <div class="mb-3">
-        <label for="json-file-select" id="json-select-label" class="mr-2 text-sm font-medium text-gray-700">Select Site Data:</label> <!-- Added id="json-select-label" -->
-        <select id="json-file-select" class="p-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="">Loading files...</option>
-        </select>
-    </div>
-    <div id="tree-container">
-        <p class="text-gray-500">Loading data...</p>
-    </div>
+<body class="bg-dark-bg text-dark-text h-screen flex flex-col md:flex-row overflow-hidden font-sans text-sm">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-dark-panel border-b border-dark-border h-12 flex items-center justify-between px-3 z-20 shrink-0">
+        <div class="flex items-center">
+            <button id="mobile-menu-btn" class="p-1.5 -ml-1 rounded hover:bg-dark-hover text-dark-muted">
+                <span class="material-icons">menu</span>
+            </button>
+            <h1 class="font-semibold text-sm ml-2 text-dark-text">Resource Browser</h1>
+        </div>
+    </header>
+
+    <!-- Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden opacity-0 transition-opacity duration-200"></div>
+
+    <!-- Left Sidebar (Scroll Independent) -->
+    <aside id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 z-40 w-64 bg-dark-panel border-r border-dark-border transform -translate-x-full md:relative md:translate-x-0 flex flex-col shadow-xl md:shadow-none shrink-0">
+        
+        <!-- Sidebar Header -->
+        <div class="h-10 flex items-center justify-between px-3 border-b border-dark-border shrink-0 bg-dark-panel">
+            <h2 class="font-bold text-dark-muted text-xs uppercase tracking-wider flex items-center gap-2">
+                <span class="material-icons text-blue-500" style="font-size: 18px;">folder_open</span>
+                Explorer
+            </h2>
+            <button id="sidebar-close-btn" class="md:hidden text-dark-muted">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <!-- Sidebar Content -->
+        <div class="flex-1 overflow-y-auto p-3 custom-scroll space-y-5">
+            
+            <!-- Data Source -->
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Source</label>
+                <div class="relative">
+                    <select id="json-file-select" class="w-full appearance-none bg-dark-bg border border-dark-border text-dark-text py-1.5 px-2 pr-6 rounded text-xs focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="" disabled selected>Select Site...</option>
+                        <option value="dummy">Load Demo Data</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-dark-muted">
+                        <span class="material-icons" style="font-size: 16px;">arrow_drop_down</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compact Controls Grid -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                    <label class="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Actions</label>
+                    <span id="mode-indicator" class="text-blue-500 font-bold font-mono text-[10px]">URL</span>
+                </div>
+                
+                <div class="grid grid-cols-5 gap-1">
+                    <button id="expand-all-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Expand All">
+                        <span class="material-icons control-icon">unfold_more</span>
+                    </button>
+                    <button id="collapse-all-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Collapse All">
+                        <span class="material-icons control-icon">unfold_less</span>
+                    </button>
+                    <button id="level-minus-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Close 1 Level">
+                        <span class="material-icons control-icon">remove</span>
+                    </button>
+                    <button id="level-plus-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Open 1 Level">
+                        <span class="material-icons control-icon">add</span>
+                    </button>
+                    <button id="toggle-view-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Toggle View (URL/Title)">
+                        <span class="material-icons control-icon">subtitles</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-dark-muted pt-4 border-t border-dark-border">
+                <p>Load a source to begin.</p>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-2 border-t border-dark-border text-[10px] text-center text-dark-muted bg-dark-panel">
+            <span class="opacity-50">v2.3 Compact Controls</span>
+        </div>
+    </aside>
+
+    <!-- Main Content (Scroll Independent) -->
+    <main class="flex-1 h-full overflow-hidden flex flex-col relative bg-dark-bg">
+        
+        <!-- Desktop Toolbar -->
+        <div class="hidden md:flex h-10 bg-dark-panel border-b border-dark-border items-center justify-between px-4 shrink-0 sticky top-0 z-10">
+            <div class="flex items-center gap-2">
+                 <span class="material-icons text-dark-muted" style="font-size: 16px;">dns</span>
+                <h2 id="main-title" class="text-xs font-semibold text-dark-text font-mono">/</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="total-links-count" class="text-xs font-mono text-dark-muted mr-4"></span>
+                <span id="loading-indicator" class="hidden flex items-center text-[10px] text-dark-muted animate-pulse">
+                    LOADING...
+                </span>
+            </div>
+        </div>
+
+        <!-- Stats Panel (Top of Main, Hidden by Default) -->
+        <div id="stats-panel" class="hidden bg-dark-bg border-b border-dark-border px-4 py-2 shrink-0">
+             <!-- Stats injected here -->
+        </div>
+
+        <!-- Tree Area -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-2 md:p-3">
+            <div id="tree-container" class="max-w-full pb-20">
+                <!-- Empty State -->
+                <div class="flex flex-col items-center justify-center h-64 text-dark-muted text-center border-2 border-dashed border-dark-border rounded-lg m-4">
+                    <span class="material-icons text-dark-border mb-2" style="font-size: 48px;">account_tree</span>
+                    <p class="text-xs">Select a source to inspect.</p>
+                    <button id="load-dummy-btn" class="mt-3 text-blue-500 hover:text-blue-400 text-xs font-mono">Load Demo Data</button>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // --- Global State ---
-        let currentDisplayMode = 'url'; // 'url' or 'title'
-        let currentTreeData = null; // Holds the structured tree data including collapse state
-        let DEFAULT_JSON_PATH = 'json/choosealicense.com.json'; // Default remains, but selection overrides
-        const MANIFEST_PATH = 'manifest.json'; // Path to the file list in the current directory
+        /**
+         * APP LOGIC - Ultra Compact Dark Edition with Level Controls
+         */
 
-        // --- Data Loading ---
-        async function fetchData(url) { // Use the passed URL
-             const container = document.getElementById('tree-container');
-             container.innerHTML = '<p class="text-gray-500">Loading data...</p>'; // Show loading message
-             try {
-                 const response = await fetch(url);
-                 if (!response.ok) {
-                     throw new Error(`HTTP error! status: ${response.status}`);
-                 }
-                 const data = await response.json();
-                 initializeTree(data);
-             } catch (error) {
-                 console.error(`Error fetching or parsing site data from ${url}:`, error);
-                 if (container) {
-                    container.innerHTML = `<p class="text-red-600">Error loading site data from ${url}. Check console for details.</p>`;
-                 }
-             }
-        }
+        // --- MOCK DATA ---
+        const MOCK_DATA = [
+            // Core
+            ["https://sys.local/api", "API Root", 200],
+            ["https://sys.local/api/v1/health", "Health Check", 200],
+            ["https://sys.local/api/v1/auth", "Auth Service", 403],
+            // Assets
+            ["https://sys.local/assets/css/main.css", "Stylesheet", 200],
+            ["https://sys.local/assets/js/app.bundle.js", "Bundle", 200],
+            ["https://sys.local/assets/img/logo.png", "Logo", 200],
+            ["https://sys.local/assets/img/hero.jpg", "Hero", 404],
+            ["https://sys.local/assets/img/icons/favicon.ico", "Icon", 200],
+            // Admin
+            ["https://sys.local/admin", "Admin Panel", 302],
+            ["https://sys.local/admin/login", "Admin Login", 200],
+            ["https://sys.local/admin/users", "User Management", 500],
+            ["https://sys.local/admin/users/details/1", "User 1", 200],
+            ["https://sys.local/admin/users/details/2", "User 2", 200],
+            ["https://sys.local/admin/settings", "Settings", 200],
+            // Errors for stats
+            ["https://sys.local/weird/endpoint", "Legacy", 410],
+            ["https://sys.local/test/error", "Test Error", 503],
+            ["https://sys.local/test/badrequest", "Bad Req", 400],
+        ];
 
-        // --- Populate JSON Files Dropdown ---
-        async function populateJsonFilesDropdown() {
-            const selectElement = document.getElementById('json-file-select');
-            if (!selectElement) return;
+        const App = {
+            config: { manifestPath: 'manifest.json', jsonPrefix: 'json/' },
+            state: { 
+                treeData: null, 
+                displayMode: 'url', 
+                isLoading: false,
+                currentDepth: 1 // Tracks the global depth setting
+            },
+            actions: {}
+        };
 
-            try {
-                const response = await fetch(MANIFEST_PATH);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        const DOM = {
+            container: document.getElementById('tree-container'),
+            fileSelect: document.getElementById('json-file-select'),
+            countDisplay: document.getElementById('total-links-count'),
+            statsPanel: document.getElementById('stats-panel'),
+            modeIndicator: document.getElementById('mode-indicator'),
+            loading: document.getElementById('loading-indicator'),
+            title: document.getElementById('main-title'),
+            sidebar: document.getElementById('sidebar'),
+            overlay: document.getElementById('sidebar-overlay')
+        };
+
+        // --- STATS LOGIC ---
+        function calculateAndRenderStats(dataArray) {
+            const stats = {
+                '2xx': { count: 0, color: 'bg-emerald-500', text: 'text-emerald-500', label: 'OK' },
+                '3xx': { count: 0, color: 'bg-amber-500', text: 'text-amber-500', label: 'Redir' },
+                '4xx': { count: 0, color: 'bg-red-500', text: 'text-red-500', label: 'Cl.Err' },
+                '5xx': { count: 0, color: 'bg-rose-600', text: 'text-rose-600', label: 'Sv.Err' },
+                'Other': { count: 0, color: 'bg-slate-500', text: 'text-slate-500', label: 'Unk' }
+            };
+
+            let total = 0;
+
+            dataArray.forEach(item => {
+                let status = 0;
+                if (Array.isArray(item) && item.length >= 3) status = parseInt(item[2]);
+                else if (typeof item === 'object' && item.status) status = parseInt(item.status);
+
+                if (status) {
+                    total++;
+                    if (status >= 200 && status < 300) stats['2xx'].count++;
+                    else if (status >= 300 && status < 400) stats['3xx'].count++;
+                    else if (status >= 400 && status < 500) stats['4xx'].count++;
+                    else if (status >= 500 && status < 600) stats['5xx'].count++;
+                    else stats['Other'].count++;
                 }
-                const filenames = await response.json();
+            });
 
-                if (!Array.isArray(filenames)) {
-                    throw new Error("Manifest content is not an array.");
-                }
-
-                selectElement.innerHTML = ''; // Clear loading message
-
-                if (filenames.length === 0) {
-                     selectElement.innerHTML = '<option value="">No files found</option>';
-                     document.getElementById('tree-container').innerHTML = '<p class="text-gray-500">No data files listed in manifest.</p>';
-                     return; // Stop if no files
-                }
-
-                filenames.forEach(filename => {
-                    if (typeof filename === 'string' && filename.endsWith('.json')) {
-                        const option = document.createElement('option');
-                        const filePath = `json/${filename}`;
-                        option.value = filePath;
-                        option.textContent = filename.replace('.json', ''); // Display name without extension
-                        selectElement.appendChild(option);
-
-                        // Set initial selection based on DEFAULT_JSON_PATH
-                        if (filePath === DEFAULT_JSON_PATH) {
-                            option.selected = true;
-                        }
-                    } else {
-                        console.warn(`Skipping invalid filename in manifest: ${filename}`);
+            if (total > 0) {
+                let html = `<div class="flex flex-col gap-1">`;
+                html += `<div class="flex w-full h-2 bg-dark-panel rounded-full overflow-hidden">`;
+                Object.keys(stats).forEach(key => {
+                    const group = stats[key];
+                    if (group.count > 0) {
+                        const percent = ((group.count / total) * 100);
+                        html += `<div class="${group.color}" style="width: ${percent}%" title="${key}: ${group.count}"></div>`;
                     }
                 });
-
-                // Add event listener for changes
-                selectElement.addEventListener('change', (event) => {
-                    const selectedFilePath = event.target.value;
-                    if (selectedFilePath) {
-                        // Update the default path (optional, but keeps it in sync)
-                        DEFAULT_JSON_PATH = selectedFilePath;
-                        // Fetch data for the newly selected file
-                        fetchData(selectedFilePath);
+                html += `</div>`;
+                html += `<div class="flex gap-4 text-[10px] font-mono">`;
+                Object.keys(stats).forEach(key => {
+                    const group = stats[key];
+                    if (group.count > 0) {
+                        const percent = ((group.count / total) * 100).toFixed(0);
+                        html += `<div class="flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full ${group.color}"></span>
+                            <span class="text-dark-muted">${key}</span>
+                            <span class="${group.text} font-bold">${group.count}</span>
+                            <span class="text-dark-border opacity-50">${percent}%</span>
+                        </div>`;
                     }
                 });
-
-                // Trigger initial data load based on the (potentially updated) selected value
-                const initialFilePath = selectElement.value;
-                if (initialFilePath) {
-                     fetchData(initialFilePath);
-                } else if (filenames.length > 0) {
-                    // Fallback: if default wasn't found, load the first file in the list
-                    const firstFilePath = `json/${filenames[0]}`;
-                    selectElement.value = firstFilePath; // Update dropdown selection
-                    DEFAULT_JSON_PATH = firstFilePath; // Update default path
-                    fetchData(firstFilePath);
-                } else {
-                     // This case should be handled by the 'No files found' check above
-                     console.error("Dropdown populated but no valid initial file path found.");
-                     document.getElementById('tree-container').innerHTML = '<p class="text-orange-500">Could not determine initial data file to load.</p>';
-                }
-
-            } catch (error) {
-                console.error("Error fetching or processing manifest file:", error);
-                selectElement.innerHTML = '<option value="">Error loading files</option>';
-                // Update error message to reflect the new path
-                document.getElementById('tree-container').innerHTML = `<p class="text-red-600">Error loading file list from ${MANIFEST_PATH}. Check console.</p>`;
+                html += `</div></div>`;
+                DOM.statsPanel.innerHTML = html;
+                DOM.statsPanel.classList.remove('hidden');
+            } else {
+                DOM.statsPanel.classList.add('hidden');
             }
         }
 
-
-        // --- Initialization ---
-        function initializeTree(data) {
-            try {
-                // Build the tree structure, including default collapsed state (false)
-                currentTreeData = buildTree(data);
-                // Initial render based on the built tree and its state
-                renderTree(currentTreeData, 'tree-container');
-
-                // Remove previous listeners before adding new ones to prevent duplicates if re-initialized
-                document.getElementById('expand-all-btn')?.removeEventListener('click', expandAll);
-                document.getElementById('collapse-all-btn')?.removeEventListener('click', collapseAll);
-                document.getElementById('toggle-view-btn')?.removeEventListener('click', toggleView);
-
-                // Add event listeners for buttons
-                document.getElementById('expand-all-btn')?.addEventListener('click', expandAll);
-                document.getElementById('collapse-all-btn')?.addEventListener('click', collapseAll);
-                document.getElementById('toggle-view-btn')?.addEventListener('click', toggleView);
-
-            } catch (error) {
-                 console.error("Error processing data or rendering tree:", error);
-                document.getElementById('tree-container').innerHTML = `<p class="text-red-600">Error processing site data. Check console for details.</p>`;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-             // Check for 'site' URL parameter
-             const urlParams = new URLSearchParams(window.location.search);
-             const siteParam = urlParams.get('site');
-
-             if (siteParam) {
-                 // Site parameter exists: hide dropdown and load directly
-                 const selectLabel = document.getElementById('json-select-label');
-                 const selectElement = document.getElementById('json-file-select');
-                 if (selectLabel) selectLabel.style.display = 'none';
-                 if (selectElement) selectElement.style.display = 'none';
-
-                 const filePath = `json/${siteParam}.json`;
-                 DEFAULT_JSON_PATH = filePath; // Update default path for consistency if needed
-                 fetchData(filePath); // Fetch data directly
-             } else {
-                 // No site parameter: populate dropdown and load default/selected
-                 populateJsonFilesDropdown();
-             }
-             // DO NOT call fetchData here directly anymore unless handled by the logic above
-        });
-
-        // --- Tree Building Logic ---
-        function buildTree(data) {
+        // --- TREE BUILDING & RECURSIVE COUNTS ---
+        function buildTree(dataArray) {
             const hosts = {};
+            let totalLinks = 0;
 
-            if (!Array.isArray(data)) {
-                console.error("Input data is not an array. Cannot build tree.", data);
-                return hosts;
-            }
+            if (!Array.isArray(dataArray)) return { tree: {}, count: 0 };
 
-            data.forEach(item => {
+            dataArray.forEach(item => {
                 let originalUrl, title, status;
-
-                // Data extraction (same as before)
                 if (Array.isArray(item) && item.length >= 3) {
                     [originalUrl, title, status] = item;
-                } else if (typeof item === 'object' && item !== null && 'url' in item && 'title' in item && 'status' in item) {
+                } else if (typeof item === 'object' && item.url) {
                     originalUrl = item.url; title = item.title; status = item.status;
-                } else {
-                    console.warn(`Skipping invalid data item:`, item); return;
-                }
-                if (typeof originalUrl !== 'string' || typeof status === 'undefined') {
-                     console.warn(`Skipping item with invalid extracted data: url=${originalUrl}, status=${status}`, item); return;
-                }
+                } else return;
+
+                totalLinks++;
 
                 try {
-                    const url = new URL(originalUrl);
-                    const hostname = url.hostname;
-                    let pathname = url.pathname;
-                    const search = url.search;
-                    const endsWithSlash = url.pathname !== '/' && url.pathname.endsWith('/');
+                    const urlObj = new URL(originalUrl);
+                    const hostname = urlObj.hostname;
+                    let pathname = urlObj.pathname;
+                    const search = urlObj.search;
 
                     if (!hosts[hostname]) {
-                        // Initialize host node with isCollapsed state
-                        hosts[hostname] = { children: {}, isEndpoint: false, urlCount: 0, name: hostname, isCollapsed: false };
+                        hosts[hostname] = { type: 'host', name: hostname, children: {}, count: 0, isCollapsed: false, leafCount: 0 };
                     }
-                    hosts[hostname].urlCount++;
+                    hosts[hostname].count++;
 
                     if (pathname.startsWith('/')) pathname = pathname.substring(1);
                     if (pathname.endsWith('/')) pathname = pathname.slice(0, -1);
 
                     let currentNode = hosts[hostname];
 
-                    // Handle root path ('/' or empty after normalization)
-                    if (pathname === '' || pathname === '/') {
-                        if (search === '') {
-                             hosts[hostname].isEndpoint = true;
-                             hosts[hostname].status = status;
-                             hosts[hostname].fullUrl = originalUrl;
-                             hosts[hostname].title = title;
-                             if (url.pathname === '/') hosts[hostname].isSlashEndpoint = true;
-                        } else {
-                            let queryNodeName = search;
-                            if (!currentNode.children[queryNodeName]) {
-                                // Initialize query node with isCollapsed state
-                                currentNode.children[queryNodeName] = { children: {}, isEndpoint: true, name: queryNodeName, status: status, fullUrl: originalUrl, title: title, isCollapsed: false };
-                            } else {
-                                currentNode.children[queryNodeName].isEndpoint = true;
-                                currentNode.children[queryNodeName].status = status;
-                                currentNode.children[queryNodeName].fullUrl = originalUrl;
-                                currentNode.children[queryNodeName].title = title;
-                            }
-                        }
+                    // Root handling
+                    if (pathname === '' && search === '') {
+                        currentNode.isEndpoint = true;
+                        currentNode.data = { url: originalUrl, title, status };
                         return;
                     }
 
-                    const segments = pathname.split('/');
+                    const segments = pathname.split('/').filter(s => s !== '');
+                    if (search) {
+                        if (segments.length === 0) segments.push(search);
+                        else segments[segments.length - 1] += search;
+                    }
+
                     segments.forEach((segment, index) => {
-                        if (segment === '') return;
-
-                        let nodeName = segment;
-                        const isLastSegment = index === segments.length - 1;
-
-                        if (isLastSegment && search) {
-                            nodeName += search;
+                        if (!currentNode.children[segment]) {
+                            currentNode.children[segment] = {
+                                type: 'folder',
+                                name: segment,
+                                children: {},
+                                isCollapsed: false, // Will be reset by depth logic
+                                isEndpoint: false,
+                                leafCount: 0
+                            };
                         }
-
-                        if (!currentNode.children[nodeName]) {
-                             // Initialize path node with isCollapsed state
-                            currentNode.children[nodeName] = { children: {}, isEndpoint: false, name: nodeName, isCollapsed: false };
+                        currentNode = currentNode.children[segment];
+                        if (index === segments.length - 1) {
+                            currentNode.isEndpoint = true;
+                            currentNode.data = { url: originalUrl, title, status };
                         }
-
-                        if (isLastSegment) {
-                            currentNode.children[nodeName].isEndpoint = true;
-                            currentNode.children[nodeName].status = status;
-                            currentNode.children[nodeName].fullUrl = originalUrl;
-                            currentNode.children[nodeName].title = title;
-                            if (endsWithSlash && !search) {
-                                currentNode.children[nodeName].isSlashEndpoint = true;
-                            }
-                        }
-                        currentNode = currentNode.children[nodeName];
                     });
-
-                } catch (e) {
-                    console.warn(`Skipping invalid URL: ${originalUrl}`, e);
-                }
+                } catch (e) { }
             });
-            return hosts;
+
+            // Post-process to calculate total leaf counts recursively
+            Object.values(hosts).forEach(host => calculateLeafCounts(host));
+
+            return { tree: hosts, count: totalLinks };
         }
 
-        // --- Rendering Logic ---
-        function renderTree(treeData, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            container.innerHTML = ''; // Clear previous content
+        function calculateLeafCounts(node) {
+            let count = 0;
+            // If this node itself is an endpoint (not just a folder), count it
+            if (node.isEndpoint) count = 1;
 
-            // Sort hosts by urlCount (descending), then alphabetically as a tie-breaker
-            const sortedHosts = Object.keys(treeData).sort((hostA, hostB) => {
-                const countA = treeData[hostA].urlCount;
-                const countB = treeData[hostB].urlCount;
-                if (countB !== countA) {
-                    return countB - countA; // Sort by count descending
-                }
-                // If counts are equal, sort alphabetically
-                return hostA.localeCompare(hostB);
-            });
+            // Add counts from all children
+            if (node.children) {
+                Object.values(node.children).forEach(child => {
+                    count += calculateLeafCounts(child);
+                });
+            }
+            node.leafCount = count;
+            return count;
+        }
 
-            if (sortedHosts.length === 0) {
-                 container.innerHTML = '<p class="text-gray-500">No valid URL data to display.</p>';
-                 return;
+        // --- DEPTH CONTROL ---
+        function setCollapseStateByDepth(node, currentDepth, targetDepth) {
+            // If current depth is less than target, it should be open (isCollapsed = false)
+            // If current depth is >= target, it should be closed (isCollapsed = true)
+            if (currentDepth < targetDepth) {
+                node.isCollapsed = false;
+            } else {
+                node.isCollapsed = true;
             }
 
-            sortedHosts.forEach(hostname => {
-                const hostData = treeData[hostname];
-                const hostRootDiv = document.createElement('div');
-                // Apply 'collapsed' class based on data state
-                hostRootDiv.className = `host-root ${hostData.isCollapsed ? 'collapsed' : ''}`;
+            if (node.children) {
+                Object.values(node.children).forEach(child => 
+                    setCollapseStateByDepth(child, currentDepth + 1, targetDepth)
+                );
+            }
+        }
 
-                const hostHeaderDiv = document.createElement('div');
-                hostHeaderDiv.className = 'host-header';
-                let hostTitle = `Click to toggle children of ${hostname}`;
-                 if (hostData.isEndpoint && hostData.fullUrl) {
-                    hostTitle += `\nEndpoint: ${hostData.fullUrl}`;
-                    if (hostData.title) hostTitle += `\nTitle: ${hostData.title}`;
-                 }
-                 hostHeaderDiv.title = hostTitle;
+        App.actions.changeDepth = (increment) => {
+            if (!App.state.treeData) return;
+            
+            App.state.currentDepth += increment;
+            if (App.state.currentDepth < 1) App.state.currentDepth = 1;
 
-                const hostChildrenDiv = document.createElement('div');
-                // Apply 'collapsed' class based on data state
-                hostChildrenDiv.className = `host-children-container ${hostData.isCollapsed ? 'collapsed' : ''}`;
+            Object.values(App.state.treeData).forEach(host => 
+                setCollapseStateByDepth(host, 0, App.state.currentDepth)
+            );
+            refreshTree();
+        };
 
-                // Render children recursively (children sorting remains alphabetical inside renderNodeChildren)
-                const childrenContent = renderNodeChildren(hostData, hostChildrenDiv); // Pass hostData
-                const hasChildren = childrenContent && childrenContent.children.length > 0;
 
-                if (!hasChildren) {
-                    hostHeaderDiv.classList.add('no-children');
-                }
+        function setCollapseStateRecursive(node, isCollapsed) {
+            node.isCollapsed = isCollapsed;
+            if (node.children) Object.values(node.children).forEach(child => setCollapseStateRecursive(child, isCollapsed));
+        }
 
-                // Append header content (hostname, count, status, link)
-                const hostNameSpan = document.createElement('span');
-                hostNameSpan.textContent = hostname;
-                hostHeaderDiv.appendChild(hostNameSpan);
+        // --- RENDERING (Adjusted Indent) ---
+        function renderStatusBadge(status) {
+            const code = parseInt(status);
+            let colorClass = 'text-dark-muted border-dark-border';
+            let label = status;
 
-                const hostCountSpan = document.createElement('span');
-                hostCountSpan.className = 'host-count';
-                hostCountSpan.textContent = `[${hostData.urlCount}]`;
-                hostHeaderDiv.appendChild(hostCountSpan);
+            if (code >= 200 && code < 300) colorClass = 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10';
+            else if (code >= 300 && code < 400) colorClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10';
+            else if (code >= 400 && code < 500) colorClass = 'text-red-400 border-red-400/30 bg-red-400/10';
+            else if (code >= 500) colorClass = 'text-rose-500 border-rose-500/30 bg-rose-500/10';
 
-                // Add Status, Title (if applicable), and Go To link
-                if (hostData.isEndpoint) {
-                     if (currentDisplayMode === 'title' && hostData.title) {
-                         const titleSpan = document.createElement('span');
-                         titleSpan.textContent = `"${hostData.title}"`;
-                         titleSpan.className = 'text-sm text-gray-600 ml-2 italic';
-                         hostHeaderDiv.appendChild(titleSpan);
-                     }
-                     const statusSpan = createStatusIndicator(hostData.status);
-                     hostHeaderDiv.appendChild(statusSpan);
-                     const link = createGoToLink(hostData.fullUrl);
-                     if (link) {
-                        link.classList.add('ml-2');
-                        hostHeaderDiv.appendChild(link);
-                     }
-                }
+            return `<span class="inline-flex items-center px-1 rounded-[2px] text-[9px] font-mono border ${colorClass} ml-1.5 min-w-[2rem] justify-center leading-3 h-3.5">${label}</span>`;
+        }
 
-                hostRootDiv.appendChild(hostHeaderDiv);
+        function renderNode(node, level = 0) {
+            const hasChildren = node.children && Object.keys(node.children).length > 0;
+            
+            // Reduced indent multiplier (0.35rem per level instead of 0.75rem)
+            const paddingLeft = level * 0.35; 
 
+            let displayName = node.name;
+            if (App.state.displayMode === 'title' && node.data && node.data.title) displayName = node.data.title;
+            else if (node.type === 'host') displayName = node.name;
+
+            const containerClass = `group relative`;
+            const hostClass = `flex items-center py-0.5 px-1 border-l-2 border-transparent hover:bg-dark-hover/50 cursor-pointer transition-colors`;
+            const itemClass = `flex items-center py-0.5 pr-1 hover:bg-dark-hover/50 cursor-pointer select-none transition-colors`;
+            const rowClass = node.type === 'host' ? hostClass : itemClass;
+            
+            const textClass = node.type === 'host' 
+                ? `font-semibold text-xs text-dark-text ml-1` 
+                : `font-mono text-xs ml-1 truncate ${node.isEndpoint ? 'text-blue-400' : 'text-dark-muted'}`;
+
+            const div = document.createElement('div');
+            div.className = containerClass;
+
+            const header = document.createElement('div');
+            header.className = rowClass;
+            if (node.type !== 'host') header.style.paddingLeft = `${paddingLeft}rem`;
+            if (node.type === 'host') header.style.backgroundColor = '#172033';
+
+            const toggleHtml = hasChildren 
+                ? `<span class="material-icons text-dark-muted toggle-icon ${!node.isCollapsed ? 'expanded' : ''}" style="font-size: 12px;">play_arrow</span>`
+                : `<span style="width: 12px; display: inline-block;"></span>`;
+
+            let iconHtml = '';
+            if (node.type === 'host') iconHtml = ``; 
+            else if (hasChildren) iconHtml = `<span class="material-icons text-yellow-600/80 mr-1" style="font-size: 12px;">folder</span>`;
+            else iconHtml = `<span class="text-dark-border mr-1 opacity-50 text-[10px]">-</span>`;
+
+            header.innerHTML = `${toggleHtml}${iconHtml}<span class="${textClass}">${displayName}</span>`;
+
+            // Counts: Show leaf count for Hosts AND Folders
+            if (node.leafCount > 0) {
+                header.innerHTML += `<span class="text-[9px] text-dark-muted font-mono px-1 ml-2 opacity-75">[${node.leafCount}]</span>`;
+            }
+
+            if (node.isEndpoint && node.data) {
+                header.innerHTML += renderStatusBadge(node.data.status);
+                header.innerHTML += `<a href="${node.data.url}" target="_blank" class="ml-auto opacity-0 group-hover:opacity-100 p-0.5 text-dark-muted hover:text-blue-400 transition-all"><span class="material-icons" style="font-size: 12px;">open_in_new</span></a>`;
+            }
+
+            header.addEventListener('click', () => {
                 if (hasChildren) {
-                    hostChildrenDiv.appendChild(childrenContent);
-                    hostRootDiv.appendChild(hostChildrenDiv);
+                    node.isCollapsed = !node.isCollapsed;
+                    refreshTree();
                 }
-
-                 // Add click listener to the host header for toggling state and view
-                 hostHeaderDiv.addEventListener('click', (e) => {
-                     if (e.target.closest('.go-to-link')) return; // Ignore clicks on the link
-
-                     // Toggle the state in the data
-                     hostData.isCollapsed = !hostData.isCollapsed;
-
-                     // Toggle the classes on the DOM elements directly
-                     const currentHostRoot = e.currentTarget.closest('.host-root');
-                     const currentHostChildren = currentHostRoot?.querySelector('.host-children-container');
-                     currentHostRoot?.classList.toggle('collapsed', hostData.isCollapsed);
-                     currentHostChildren?.classList.toggle('collapsed', hostData.isCollapsed);
-                 });
-
-                 container.appendChild(hostRootDiv);
             });
-        }
 
-        // Helper to create status indicator (unchanged)
-        function createStatusIndicator(status) {
-            const statusSpan = document.createElement('span');
-            statusSpan.className = 'status-indicator';
-            if (status >= 200 && status < 300) {
-                statusSpan.textContent = `✓ ${status}`; statusSpan.classList.add('status-ok');
-            } else if (status) {
-                statusSpan.textContent = `✗ ${status}`; statusSpan.classList.add('status-error');
-            } else {
-                statusSpan.textContent = '?'; statusSpan.classList.add('status-error');
-            }
-            return statusSpan;
-        }
+            div.appendChild(header);
 
-        // Helper to create Go To URL link (unchanged)
-        function createGoToLink(url) {
-            if (!url) return null;
-            const link = document.createElement('a');
-            link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
-            link.className = 'go-to-link'; link.textContent = '→'; link.title = `Go to ${url}`;
-            link.addEventListener('click', (e) => e.stopPropagation());
-            return link;
-        }
-
-        // Recursive function to render children
-        function renderNodeChildren(parentNodeData, parentElement) { // Accept parentNodeData
-            const childKeys = Object.keys(parentNodeData.children);
-            if (childKeys.length === 0) return null;
-
-            const childrenContainer = document.createElement('div');
-             // Apply 'collapsed' class based on parent's state (this seems wrong, should be based on node's own state?)
-             // Correction: The container itself doesn't get collapsed, the individual nodes within it do.
-             // The parent's state controls the visibility of this *entire* container.
-             // Let's remove the collapsed class here, it's handled by the parent node's logic.
-            childrenContainer.className = 'node-children'; // Always start expanded relative to parent
-
-            const sortedChildrenKeys = childKeys.sort();
-
-            sortedChildrenKeys.forEach(nodeName => {
-                const childNodeData = parentNodeData.children[nodeName];
-                const hasGrandChildren = Object.keys(childNodeData.children).length > 0;
-                const isLeafNode = childNodeData.isEndpoint && !hasGrandChildren;
-
-                const nodeDiv = document.createElement('div');
-                // Apply 'collapsed' class based on this node's data state
-                nodeDiv.className = `tree-node ${childNodeData.isCollapsed ? 'collapsed' : ''}`;
-
-                const nodeHeaderDiv = document.createElement('div');
-                nodeHeaderDiv.className = 'node-header';
-                let headerTitle = childNodeData.fullUrl || '';
-                if (childNodeData.isEndpoint && childNodeData.title) {
-                    headerTitle += `\nTitle: ${childNodeData.title}`;
-                }
-                if (headerTitle) nodeHeaderDiv.title = headerTitle.trim();
-
-                const toggleSpan = document.createElement('span');
-                toggleSpan.className = 'node-toggle';
-                if (!hasGrandChildren) toggleSpan.classList.add('hidden');
-
-                let nameElement;
-                let displayName = nodeName;
-                let statusSpan = null;
-                let linkSpan = null;
-
-                // Determine display name based on mode
-                if (currentDisplayMode === 'title' && childNodeData.isEndpoint && childNodeData.title) {
-                    displayName = childNodeData.title;
-                } else if (!childNodeData.isEndpoint && hasGrandChildren) {
-                     displayName += '/';
-                }
-
-                // Node Naming and Linking (mostly unchanged logic, uses displayName)
-                if (isLeafNode) {
-                    nameElement = document.createElement('a');
-                    nameElement.href = childNodeData.fullUrl; nameElement.target = "_blank"; nameElement.rel = "noopener noreferrer";
-                    nameElement.className = 'node-name leaf-node-name';
-                    nameElement.textContent = displayName;
-                    nameElement.addEventListener('click', e => e.stopPropagation());
-                    statusSpan = createStatusIndicator(childNodeData.status);
+            if (hasChildren && !node.isCollapsed) {
+                const childrenContainer = document.createElement('div');
+                // Adjusted guide line indent to match new padding
+                if (node.type !== 'host') {
+                    childrenContainer.className = 'relative ml-[0.3rem] pl-[0.3rem] border-l border-dark-border/40';
                 } else {
-                    nameElement = document.createElement('span');
-                    nameElement.className = 'node-name';
-                    nameElement.textContent = displayName;
-                    if (hasGrandChildren) nameElement.style.cursor = 'pointer';
-
-                    if (childNodeData.isEndpoint) {
-                        const leafMarker = document.createElement('span');
-                        leafMarker.className = 'leaf-endpoint-marker';
-                        if (currentDisplayMode === 'title' && childNodeData.title) {
-                             leafMarker.textContent = `(${nodeName}) - `;
-                             leafMarker.style.fontStyle = 'italic'; leafMarker.style.color = '#6b7280';
-                        } else {
-                             leafMarker.textContent = '- ';
-                        }
-                        nodeHeaderDiv.appendChild(leafMarker);
-                        statusSpan = createStatusIndicator(childNodeData.status);
-                        linkSpan = createGoToLink(childNodeData.fullUrl);
-                    }
+                    childrenContainer.className = 'mt-0.5';
                 }
 
-                // Count Calculation (unchanged)
-                const countSpan = document.createElement('span');
-                countSpan.className = 'node-count';
-                let displayCount = '';
-                if (hasGrandChildren) {
-                    let parentChildrenCount = 0, leafChildrenCount = 0;
-                    Object.values(childNodeData.children).forEach(grandChild => {
-                        const grandChildHasChildren = Object.keys(grandChild.children).length > 0;
-                        if (grandChildHasChildren) parentChildrenCount++;
-                        else if (grandChild.isEndpoint) leafChildrenCount++;
-                    });
-                    // Conditionally format the display count
-                    if (leafChildrenCount > 0) {
-                        displayCount = `[${parentChildrenCount}:${leafChildrenCount}]`;
-                    } else {
-                        displayCount = `[${parentChildrenCount}]`; // Omit :0 if leaf count is 0
-                    }
-                    countSpan.textContent = displayCount;
-                }
+                const sortedKeys = Object.keys(node.children).sort((a, b) => {
+                    const childA = node.children[a], childB = node.children[b];
+                    const aKids = Object.keys(childA.children).length > 0;
+                    const bKids = Object.keys(childB.children).length > 0;
+                    if (aKids && !bKids) return -1;
+                    if (!aKids && bKids) return 1;
+                    return a.localeCompare(b);
+                });
 
-                // Assemble Header (unchanged order)
-                nodeHeaderDiv.appendChild(toggleSpan);
-                nodeHeaderDiv.appendChild(nameElement);
-                if (displayCount) nodeHeaderDiv.appendChild(countSpan);
-                if (statusSpan) nodeHeaderDiv.appendChild(statusSpan);
-                if (linkSpan) nodeHeaderDiv.appendChild(linkSpan);
-                nodeDiv.appendChild(nodeHeaderDiv);
-
-                // Recursive Call and Toggle Logic
-                let grandChildrenContainer = null;
-                if (hasGrandChildren) {
-                    // Pass childNodeData to recursive call
-                    grandChildrenContainer = renderNodeChildren(childNodeData, nodeDiv);
-                    if (grandChildrenContainer) {
-                         // Apply collapsed class based on childNodeData's state
-                         grandChildrenContainer.classList.toggle('collapsed', childNodeData.isCollapsed);
-                         nodeDiv.appendChild(grandChildrenContainer);
-
-                        // Add Toggle Listener to header
-                        nodeHeaderDiv.addEventListener('click', (e) => {
-                            if (e.target.closest('.go-to-link') || e.target.tagName === 'A') return;
-
-                            // Toggle state in the data
-                            childNodeData.isCollapsed = !childNodeData.isCollapsed;
-
-                            // Toggle classes on the DOM elements directly
-                            const currentNodeDiv = e.currentTarget.closest('.tree-node');
-                            const currentGrandChildrenContainer = currentNodeDiv?.querySelector('.node-children');
-                            currentNodeDiv?.classList.toggle('collapsed', childNodeData.isCollapsed);
-                            currentGrandChildrenContainer?.classList.toggle('collapsed', childNodeData.isCollapsed);
-                        });
-                    }
-                }
-
-                childrenContainer.appendChild(nodeDiv);
-            }); // End forEach child
-
-            return childrenContainer;
-        }
-
-        // --- State Update and Re-render Functions ---
-
-        // Helper function to recursively set collapse state on data
-        function setNodeCollapseState(nodeData, isCollapsed) {
-            nodeData.isCollapsed = isCollapsed;
-            Object.values(nodeData.children).forEach(child => {
-                setNodeCollapseState(child, isCollapsed);
-            });
-        }
-
-        function expandAll() {
-            if (!currentTreeData) return;
-            Object.values(currentTreeData).forEach(hostData => {
-                setNodeCollapseState(hostData, false); // Set isCollapsed to false recursively
-            });
-            renderTree(currentTreeData, 'tree-container'); // Re-render the tree
-        }
-
-        function collapseAll() {
-            if (!currentTreeData) return;
-            Object.values(currentTreeData).forEach(hostData => {
-                setNodeCollapseState(hostData, true); // Set isCollapsed to true recursively
-            });
-            renderTree(currentTreeData, 'tree-container'); // Re-render the tree
-        }
-
-        function toggleView() {
-            const btn = document.getElementById('toggle-view-btn');
-            if (currentDisplayMode === 'url') {
-                currentDisplayMode = 'title';
-                if (btn) btn.textContent = 'Show URLs';
-            } else {
-                currentDisplayMode = 'url';
-                 if (btn) btn.textContent = 'Show Titles';
+                sortedKeys.forEach(key => {
+                    childrenContainer.appendChild(renderNode(node.children[key], node.type === 'host' ? 0.5 : level + 1));
+                });
+                div.appendChild(childrenContainer);
             }
-            // Re-render the tree with the new mode, preserving collapse state from data
-            if (currentTreeData) {
-                 renderTree(currentTreeData, 'tree-container');
-            } else {
-                console.warn("Cannot toggle view: Tree data not available.");
+            return div;
+        }
+
+        function refreshTree() {
+            if (!App.state.treeData) return;
+            DOM.container.innerHTML = '';
+            Object.keys(App.state.treeData)
+                .sort((a, b) => App.state.treeData[b].leafCount - App.state.treeData[a].leafCount)
+                .forEach(host => DOM.container.appendChild(renderNode(App.state.treeData[host])));
+        }
+
+        // --- INIT & EVENTS ---
+        async function loadManifest() {
+            try {
+                const res = await fetch(App.config.manifestPath);
+                if (!res.ok) throw new Error();
+                const files = await res.json();
+                while (DOM.fileSelect.options.length > 1) DOM.fileSelect.remove(1);
+                
+                const dummyOpt = document.createElement('option');
+                dummyOpt.value = 'dummy'; dummyOpt.text = '⚡ Demo Data'; dummyOpt.style.color = '#3b82f6';
+                DOM.fileSelect.appendChild(dummyOpt);
+
+                files.forEach(f => {
+                    if(f.endsWith('.json')) {
+                        const opt = document.createElement('option');
+                        opt.value = App.config.jsonPrefix + f; opt.text = f.replace('.json', '');
+                        DOM.fileSelect.appendChild(opt);
+                    }
+                });
+            } catch (e) {
+                DOM.fileSelect.innerHTML = '<option value="dummy" selected>⚡ Demo Data (Offline)</option>';
+                loadData('dummy');
             }
         }
+
+        async function loadData(source) {
+            DOM.loading.classList.remove('hidden');
+            DOM.container.innerHTML = '';
+            DOM.countDisplay.textContent = '...';
+            DOM.statsPanel.innerHTML = ''; 
+            DOM.statsPanel.classList.add('hidden');
+
+            let data = [];
+            try {
+                if (source === 'dummy') {
+                    await new Promise(r => setTimeout(r, 300));
+                    data = MOCK_DATA;
+                } else {
+                    const res = await fetch(source);
+                    if (!res.ok) throw new Error();
+                    data = await res.json();
+                }
+
+                const { tree, count } = buildTree(data);
+                App.state.treeData = tree;
+                DOM.countDisplay.textContent = `${count} Links`;
+                DOM.title.textContent = source === 'dummy' ? 'DEMO_DATA' : source.split('/').pop();
+                
+                calculateAndRenderStats(data);
+                
+                // Reset Depth
+                App.state.currentDepth = 1;
+                Object.values(App.state.treeData).forEach(host => 
+                    setCollapseStateByDepth(host, 0, 1)
+                );
+                refreshTree();
+
+            } catch (e) {
+                console.error(e);
+                DOM.container.innerHTML = `<div class="text-red-400 text-center p-4 text-xs border border-red-900 bg-red-900/20 rounded">Failed to load data.</div>`;
+            } finally {
+                DOM.loading.classList.add('hidden');
+                if (window.innerWidth < 768) toggleSidebar(false);
+            }
+        }
+
+        // Sidebar Toggles
+        const toggleSidebar = (show) => {
+            const isHidden = DOM.sidebar.classList.contains('-translate-x-full');
+            if (show !== undefined ? show : isHidden) {
+                DOM.sidebar.classList.remove('-translate-x-full');
+                DOM.overlay.classList.remove('hidden');
+                setTimeout(() => DOM.overlay.classList.remove('opacity-0'), 10);
+            } else {
+                DOM.sidebar.classList.add('-translate-x-full');
+                DOM.overlay.classList.add('opacity-0');
+                setTimeout(() => DOM.overlay.classList.add('hidden'), 200);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadManifest();
+            DOM.fileSelect.addEventListener('change', (e) => loadData(e.target.value));
+            document.getElementById('load-dummy-btn')?.addEventListener('click', () => { DOM.fileSelect.value='dummy'; loadData('dummy'); });
+            
+            document.getElementById('expand-all-btn').addEventListener('click', () => { 
+                if(App.state.treeData) { 
+                    App.state.currentDepth = 999; // Set max depth
+                    Object.values(App.state.treeData).forEach(h => setCollapseStateRecursive(h, false)); 
+                    refreshTree(); 
+                }
+            });
+            
+            document.getElementById('collapse-all-btn').addEventListener('click', () => { 
+                if(App.state.treeData) { 
+                    App.state.currentDepth = 0; // Reset depth
+                    Object.values(App.state.treeData).forEach(h => setCollapseStateRecursive(h, true)); 
+                    refreshTree(); 
+                }
+            });
+            
+            // Level Controls
+            document.getElementById('level-plus-btn').addEventListener('click', () => App.actions.changeDepth(1));
+            document.getElementById('level-minus-btn').addEventListener('click', () => App.actions.changeDepth(-1));
+
+            document.getElementById('toggle-view-btn').addEventListener('click', () => { 
+                App.state.displayMode = App.state.displayMode === 'url' ? 'title' : 'url'; 
+                DOM.modeIndicator.textContent = App.state.displayMode === 'url' ? 'URL' : 'TITLE'; 
+                refreshTree(); 
+            });
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => toggleSidebar(true));
+            document.getElementById('sidebar-close-btn').addEventListener('click', () => toggleSidebar(false));
+            DOM.overlay.addEventListener('click', () => toggleSidebar(false));
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const site = urlParams.get('site');
+            if (site) {
+                const p = `${App.config.jsonPrefix}${site}.json`;
+                loadData(p);
+                setTimeout(() => {
+                    if(![...DOM.fileSelect.options].some(o=>o.value===p)) {
+                        const opt = document.createElement('option'); opt.value = p; opt.text = site; DOM.fileSelect.appendChild(opt);
+                    }
+                    DOM.fileSelect.value = p;
+                }, 500);
+            }
+        });
     </script>
 </body>
 </html>
