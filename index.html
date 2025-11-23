@@ -116,20 +116,6 @@
         <!-- Sidebar Content -->
         <div class="flex-1 overflow-y-auto p-3 custom-scroll space-y-5">
             
-            <!-- Data Source -->
-            <div class="space-y-1.5">
-                <label class="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Source</label>
-                <div class="relative">
-                    <select id="json-file-select" class="w-full appearance-none bg-dark-bg border border-dark-border text-dark-text py-1.5 px-2 pr-6 rounded text-xs focus:outline-none focus:border-blue-500 transition-colors">
-                        <option value="" disabled selected>Select Site...</option>
-                        <option value="dummy">Load Demo Data</option>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-dark-muted">
-                        <span class="material-icons" style="font-size: 16px;">arrow_drop_down</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Compact Controls Grid -->
             <div class="space-y-2">
                 <div class="flex items-center justify-between px-1">
@@ -153,6 +139,13 @@
                     <button id="toggle-view-btn" class="bg-dark-bg border border-dark-border hover:bg-dark-hover text-dark-muted hover:text-dark-text py-1.5 rounded transition-colors flex justify-center items-center group" title="Toggle View (URL/Title)">
                         <span class="material-icons control-icon">subtitles</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- Data Source -->
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Source</label>
+                <div id="source-list" class="space-y-1">
                 </div>
             </div>
 
@@ -245,7 +238,7 @@
 
         const DOM = {
             container: document.getElementById('tree-container'),
-            fileSelect: document.getElementById('json-file-select'),
+            sourceList: document.getElementById('source-list'),
             countDisplay: document.getElementById('total-links-count'),
             statsPanel: document.getElementById('stats-panel'),
             modeIndicator: document.getElementById('mode-indicator'),
@@ -547,21 +540,19 @@
                 const res = await fetch(App.config.manifestPath);
                 if (!res.ok) throw new Error();
                 const files = await res.json();
-                while (DOM.fileSelect.options.length > 1) DOM.fileSelect.remove(1);
-                
-                const dummyOpt = document.createElement('option');
-                dummyOpt.value = 'dummy'; dummyOpt.text = '⚡ Demo Data'; dummyOpt.style.color = '#3b82f6';
-                DOM.fileSelect.appendChild(dummyOpt);
+                DOM.sourceList.innerHTML = '';
 
                 files.forEach(f => {
                     if(f.endsWith('.json')) {
-                        const opt = document.createElement('option');
-                        opt.value = App.config.jsonPrefix + f; opt.text = f.replace('.json', '');
-                        DOM.fileSelect.appendChild(opt);
+                        const div = document.createElement('div');
+                        div.className = 'text-dark-text py-0.5 px-1 text-xs cursor-pointer hover:text-blue-400 transition-colors';
+                        div.textContent = f.replace('.json', '');
+                        div.dataset.value = App.config.jsonPrefix + f;
+                        DOM.sourceList.appendChild(div);
                     }
                 });
             } catch (e) {
-                DOM.fileSelect.innerHTML = '<option value="dummy" selected>⚡ Demo Data (Offline)</option>';
+                DOM.sourceList.innerHTML = '<div class="text-dark-text py-0.5 px-1 text-xs cursor-pointer hover:text-blue-400 transition-colors" data-value="dummy">⚡ Demo Data (Offline)</div>';
                 loadData('dummy');
             }
         }
@@ -623,8 +614,12 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadManifest();
-            DOM.fileSelect.addEventListener('change', (e) => loadData(e.target.value));
-            document.getElementById('load-dummy-btn')?.addEventListener('click', () => { DOM.fileSelect.value='dummy'; loadData('dummy'); });
+            DOM.sourceList.addEventListener('click', (e) => {
+                if (e.target.dataset.value) {
+                    loadData(e.target.dataset.value);
+                }
+            });
+            document.getElementById('load-dummy-btn')?.addEventListener('click', () => loadData('dummy'));
             
             document.getElementById('expand-all-btn').addEventListener('click', () => { 
                 if(App.state.treeData) { 
@@ -661,10 +656,14 @@
                 const p = `${App.config.jsonPrefix}${site}.json`;
                 loadData(p);
                 setTimeout(() => {
-                    if(![...DOM.fileSelect.options].some(o=>o.value===p)) {
-                        const opt = document.createElement('option'); opt.value = p; opt.text = site; DOM.fileSelect.appendChild(opt);
+                    const existing = DOM.sourceList.querySelector(`[data-value="${p}"]`);
+                    if (!existing) {
+                        const div = document.createElement('div');
+                        div.className = 'bg-dark-bg border border-dark-border text-dark-text py-1.5 px-2 rounded text-xs cursor-pointer hover:bg-dark-hover transition-colors';
+                        div.textContent = site;
+                        div.dataset.value = p;
+                        DOM.sourceList.appendChild(div);
                     }
-                    DOM.fileSelect.value = p;
                 }, 500);
             }
         });
